@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer base {
+  :root {
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
+
+    /* <CHANGE> Updated color tokens for SmartSpendHub fintech theme */
+    --background: 0 0% 99%;
+    --foreground: 10 10% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 10 10% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 10 10% 15%;
+
+    /* Primary teal color scheme */
+    --primary: 174 100% 47%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary mint/light teal */
+    --secondary: 175 65% 92%;
+    --secondary-foreground: 174 100% 30%;
+
+    /* Accent blue */
+    --accent: 217 98% 61%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Muted grays */
+    --muted: 0 0% 93%;
+    --muted-foreground: 0 0% 55%;
+
+    /* Borders and inputs */
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
+
+    /* Destructive red for alerts */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --ring: 174 100% 47%;
+    --radius: 0.875rem;
+
+    /* Sidebar tokens */
+    --sidebar-background: 0 0% 99%;
+    --sidebar-foreground: 10 10% 15%;
+    --sidebar-primary: 174 100% 47%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 175 65% 92%;
+    --sidebar-accent-foreground: 174 100% 30%;
+    --sidebar-border: 0 0% 88%;
+    --sidebar-ring: 217 98% 61%;
+  }
+
+  .dark {
+    --background: 10 10% 8%;
+    --foreground: 0 0% 98%;
+    --card: 10 10% 12%;
+    --card-foreground: 0 0% 98%;
+    --popover: 10 10% 12%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Primary teal for dark mode */
+    --primary: 174 100% 52%;
+    --primary-foreground: 10 10% 8%;
+
+    /* Secondary mint for dark mode */
+    --secondary: 175 65% 25%;
+    --secondary-foreground: 175 65% 85%;
+
+    /* Accent blue for dark mode */
+    --accent: 217 98% 65%;
+    --accent-foreground: 10 10% 8%;
+
+    /* Muted grays for dark mode */
+    --muted: 10 10% 25%;
+    --muted-foreground: 0 0% 70%;
+
+    /* Borders and inputs for dark mode */
+    --border: 10 10% 20%;
+    --input: 10 10% 20%;
+
+    /* Destructive red for dark mode */
+    --destructive: 0 62.8% 50.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --ring: 174 100% 52%;
+
+    /* Sidebar dark mode */
+    --sidebar-background: 10 10% 8%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 174 100% 52%;
+    --sidebar-primary-foreground: 10 10% 8%;
+    --sidebar-accent: 175 65% 25%;
+    --sidebar-accent-foreground: 175 65% 85%;
+    --sidebar-border: 10 10% 20%;
+    --sidebar-ring: 217 98% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* <CHANGE> Glassmorphism and soft shadow utilities */
+@layer components {
+  .glass {
+    @apply bg-white/80 dark:bg-white/10 backdrop-blur-md border border-white/20 dark:border-white/10;
+  }
+
+  .soft-shadow {
+    @apply shadow-lg shadow-black/5;
+  }
+}
