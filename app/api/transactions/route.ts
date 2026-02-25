@@ -107,7 +107,6 @@ export async function POST(request: NextRequest) {
         description: description ? description.toString() : null,
         date: date.toString(),
         type: type.toString(),
-        recurring: false,
       })
       .select()
 
