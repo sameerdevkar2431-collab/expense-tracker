@@ -13,16 +13,16 @@ This document explains how to deploy the production-ready backend infrastructure
 Set these environment variables in your Vercel project settings:
 
 ### Supabase Configuration
-```
+\`\`\`
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-```
+\`\`\`
 
 ### OpenAI Configuration
-```
+\`\`\`
 OPENAI_API_KEY=sk-your-api-key
-```
+\`\`\`
 
 ## Architecture Overview
 
@@ -70,7 +70,7 @@ Analyzes receipt image using OpenAI Vision API. Returns extracted data.
    - [ ] Enable Row Level Security policies
 
 3. **Database Tables**
-   ```sql
+   \`\`\`sql
    -- Create transactions table
    CREATE TABLE transactions (
      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -106,7 +106,7 @@ Analyzes receipt image using OpenAI Vision API. Returns extracted data.
    CREATE POLICY "Users can insert own transactions"
      ON transactions FOR INSERT
      WITH CHECK (auth.uid() = user_id);
-   ```
+   \`\`\`
 
 4. **Storage Bucket**
    - [ ] Create `receipts` bucket in Supabase Storage

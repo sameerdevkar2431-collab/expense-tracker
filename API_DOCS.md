@@ -1,18 +1,18 @@
 # API Documentation
 
 ## Base URL
-```
+\`\`\`
 https://your-app.vercel.app/api
-```
+\`\`\`
 
 ## Error Responses
 
 All API errors follow this format:
-```json
+\`\`\`json
 {
   "error": "Error message describing what went wrong"
 }
-```
+\`\`\`
 
 HTTP status codes:
 - `200` - Success
@@ -29,18 +29,18 @@ Health check endpoint.
 **No authentication required**
 
 **Response:**
-```json
+\`\`\`json
 {
   "status": "healthy",
   "timestamp": "2024-01-15T10:30:00Z",
   "uptime": 3600
 }
-```
+\`\`\`
 
 **Example:**
-```bash
+\`\`\`bash
 curl https://your-app.vercel.app/api/health
-```
+\`\`\`
 
 ---
 
@@ -50,7 +50,7 @@ Get current authenticated user info.
 **Authentication:** Required (Supabase session)
 
 **Response:**
-```json
+\`\`\`json
 {
   "user": {
     "id": "user-uuid",
@@ -58,13 +58,13 @@ Get current authenticated user info.
     "name": "John Doe"
   }
 }
-```
+\`\`\`
 
 **Example:**
-```bash
+\`\`\`bash
 curl -H "Cookie: sb-access-token=your-token" \
   https://your-app.vercel.app/api/auth/me
-```
+\`\`\`
 
 ---
 
@@ -78,7 +78,7 @@ Get user's transactions.
 - `type` (optional): Filter by type (expense, income)
 
 **Response:**
-```json
+\`\`\`json
 {
   "transactions": [
     {
@@ -91,13 +91,13 @@ Get user's transactions.
     }
   ]
 }
-```
+\`\`\`
 
 **Example:**
-```bash
+\`\`\`bash
 curl -H "Cookie: sb-access-token=your-token" \
   https://your-app.vercel.app/api/transactions
-```
+\`\`\`
 
 ---
 
@@ -107,7 +107,7 @@ Create new transaction.
 **Authentication:** Required
 
 **Request Body:**
-```json
+\`\`\`json
 {
   "amount": 500,
   "category": "Food",
@@ -115,10 +115,10 @@ Create new transaction.
   "date": "2024-01-15",
   "type": "expense"
 }
-```
+\`\`\`
 
 **Response:**
-```json
+\`\`\`json
 {
   "transaction": {
     "id": "transaction-id",
@@ -129,10 +129,10 @@ Create new transaction.
     "type": "expense"
   }
 }
-```
+\`\`\`
 
 **Example:**
-```bash
+\`\`\`bash
 curl -X POST \
   -H "Content-Type: application/json" \
   -H "Cookie: sb-access-token=your-token" \
@@ -144,7 +144,7 @@ curl -X POST \
     "type": "expense"
   }' \
   https://your-app.vercel.app/api/transactions
-```
+\`\`\`
 
 ---
 
@@ -157,21 +157,21 @@ Upload receipt image to Supabase Storage.
 - `file`: Image file (jpg, png, webp, etc.)
 
 **Response:**
-```json
+\`\`\`json
 {
   "success": true,
   "url": "https://supabase-url.supabase.co/storage/v1/object/public/receipts/...",
   "fileName": "user-id/1234567-uuid-filename.jpg"
 }
-```
+\`\`\`
 
 **Example:**
-```bash
+\`\`\`bash
 curl -X POST \
   -H "Cookie: sb-access-token=your-token" \
   -F "file=@receipt.jpg" \
   https://your-app.vercel.app/api/receipts/upload
-```
+\`\`\`
 
 ---
 
@@ -181,14 +181,14 @@ Analyze receipt image using OpenAI Vision API.
 **Authentication:** Required
 
 **Request Body:**
-```json
+\`\`\`json
 {
   "imageUrl": "https://supabase-url.supabase.co/storage/v1/object/public/receipts/..."
 }
-```
+\`\`\`
 
 **Response:**
-```json
+\`\`\`json
 {
   "success": true,
   "data": {
@@ -202,10 +202,10 @@ Analyze receipt image using OpenAI Vision API.
   },
   "confidence": 0.9
 }
-```
+\`\`\`
 
 **Example:**
-```bash
+\`\`\`bash
 curl -X POST \
   -H "Content-Type: application/json" \
   -H "Cookie: sb-access-token=your-token" \
@@ -213,7 +213,7 @@ curl -X POST \
     "imageUrl": "https://supabase-url.supabase.co/storage/..."
   }' \
   https://your-app.vercel.app/api/receipts/analyze
-```
+\`\`\`
 
 ## Rate Limits
 
