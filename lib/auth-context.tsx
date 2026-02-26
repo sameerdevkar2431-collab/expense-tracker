@@ -3,6 +3,7 @@
 import React, { createContext, useState, useEffect } from "react"
 import { storage } from "@/lib/storage"
 import { createClient } from "@/lib/supabase/client"
+import { createUserProfile } from "@/app/actions/auth"
 
 interface User {
   id: string
@@ -107,17 +108,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.user) {
         console.log("[v0] User created in Supabase:", data.user.id)
         
-        // Create user profile in users table
-        const { error: profileError } = await supabase.from("users").insert({
-          id: data.user.id,
-          email: data.user.email,
-          name: name,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-
-        if (profileError) {
-          console.error("[v0] Profile creation error:", profileError)
+        // Create user profile in users table using server action (bypasses RLS)
+        try {
+          await createUserProfile(data.user.id, data.user.email || "", name)
+          console.log("[v0] User profile created successfully")
+        } catch (profileErr) {
+          console.error("[v0] Profile creation error:", profileErr)
           throw new Error("Failed to create user profile")
         }
 
