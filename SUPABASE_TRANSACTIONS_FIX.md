@@ -12,12 +12,12 @@
 ### 2. **API Route Missing Debug Logging**
 **Problem**: No visibility into why inserts were failing silently.
 **Fix**: Added comprehensive console.log statements:
-```javascript
+\`\`\`javascript
 console.log("[v0] Auth check:", { hasUser: !!user, userId: user?.id })
 console.log("[v0] Request body:", body)
 console.log("[v0] Inserting transaction for user:", user.id)
 console.log("[v0] Successfully inserted transaction:", data?.[0]?.id)
-```
+\`\`\`
 This reveals authentication status, request data, and Supabase responses.
 
 ### 3. **Environment Variables Verification**
@@ -29,22 +29,22 @@ This reveals authentication status, request data, and Supabase responses.
 ### 4. **RLS Policies Not Blocking But May Not Exist**
 **Problem**: Transactions table needs RLS policies to enforce user_id isolation.
 **Status**: Supabase shows RLS enabled with 4 policies, but verify with:
-```sql
+\`\`\`sql
 SELECT tablename, policyname FROM pg_policies WHERE tablename = 'transactions';
-```
+\`\`\`
 
 If policies don't exist, run the SQL in `SUPABASE_RLS_SETUP.sql`
 
 ### 5. **Middleware Cookie Handling**
 **Fix Applied**: Middleware correctly refreshes session via `updateSession()`:
-```typescript
+\`\`\`typescript
 export async function updateSession(request: NextRequest) {
   // Gets cookies from request
   // Calls supabase.auth.getUser() to refresh session
   // Sets cookies in response
   return supabaseResponse
 }
-```
+\`\`\`
 
 This ensures auth state persists across requests.
 
@@ -53,13 +53,13 @@ This ensures auth state persists across requests.
 ### 1. Check Console Logs
 Open browser DevTools → Console
 When you save an expense, look for:
-```
+\`\`\`
 [v0] POST /api/transactions - Starting
 [v0] Auth check: { hasUser: true, userId: "uuid..." }
 [v0] Request body: { amount: 100, category: "Food", ... }
 [v0] Inserting transaction for user: uuid...
 [v0] Successfully inserted transaction: uuid...
-```
+\`\`\`
 
 If you see `hasUser: false`, authentication failed. Check:
 - User is logged in (check `/api/auth/me`)
@@ -76,18 +76,18 @@ In Network tab, inspect POST `/api/transactions`:
 ### 3. Verify Database
 Open Supabase dashboard:
 1. SQL Editor → Run:
-```sql
+\`\`\`sql
 SELECT id, user_id, amount, category, date, created_at 
 FROM transactions 
 WHERE user_id = 'YOUR_USER_ID'
 ORDER BY created_at DESC 
 LIMIT 10;
-```
+\`\`\`
 
 2. Check auth_users table:
-```sql
+\`\`\`sql
 SELECT id, email, created_at FROM auth.users LIMIT 1;
-```
+\`\`\`
 
 ## Complete Code Changes
 
