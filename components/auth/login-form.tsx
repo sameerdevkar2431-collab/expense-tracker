@@ -27,7 +27,8 @@ export function LoginForm() {
       await login(email, password)
       router.push("/dashboard")
     } catch (err) {
-      setError("Login failed. Please try again.")
+      const errorMsg = err instanceof Error ? err.message : "Login failed. Please check your email and password."
+      setError(errorMsg)
     } finally {
       setIsLoading(false)
     }

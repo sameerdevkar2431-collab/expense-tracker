@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 
 export async function signupServerAction(email: string, password: string, name: string) {
   try {
@@ -27,10 +28,11 @@ export async function signupServerAction(email: string, password: string, name: 
 
     console.log("[v0] Auth user created:", authData.user.id)
 
-    // Create user profile using service role (bypasses RLS)
-    const { error: profileError } = await supabase.from("users").insert({
+    // Create user profile using admin client (bypasses RLS)
+    const adminClient = createAdminClient()
+    const { error: profileError } = await adminClient.from("users").insert({
       id: authData.user.id,
-      email: authData.user.email,
+      email: authData.user.email || email,
       name: name,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -43,11 +45,25 @@ export async function signupServerAction(email: string, password: string, name: 
 
     console.log("[v0] User profile created successfully")
 
+    // Sign in the user immediately after signup using signInWithPassword
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (signInError) {
+      console.error("[v0] Auto sign-in after signup failed:", signInError)
+      // Don't throw - signup was successful, just sign-in failed
+      // User can still manually log in
+    } else if (signInData.user) {
+      console.log("[v0] User auto-signed in after signup")
+    }
+
     return {
       success: true,
       user: {
         id: authData.user.id,
-        email: authData.user.email,
+        email: authData.user.email || email,
         name: name,
       },
     }
