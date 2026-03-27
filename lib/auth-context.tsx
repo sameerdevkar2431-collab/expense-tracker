@@ -3,7 +3,6 @@
 import React, { createContext, useState, useEffect } from "react"
 import { storage } from "@/lib/storage"
 import { createClient } from "@/lib/supabase/client"
-import { createUserProfile } from "@/app/actions/auth"
 
 interface User {
   id: string
@@ -92,35 +91,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("[v0] Signing up with email:", email, "name:", name)
       
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { name },
-        },
-      })
+      // Use server action to create user (bypasses RLS with service role)
+      const { signupServerAction } = await import("@/app/actions/auth")
+      const result = await signupServerAction(email, password, name)
 
-      if (error) {
-        console.error("[v0] Signup error:", error)
-        throw new Error(error.message)
-      }
-
-      if (data.user) {
-        console.log("[v0] User created in Supabase:", data.user.id)
-        
-        // Create user profile in users table using server action (bypasses RLS)
-        try {
-          await createUserProfile(data.user.id, data.user.email || "", name)
-          console.log("[v0] User profile created successfully")
-        } catch (profileErr) {
-          console.error("[v0] Profile creation error:", profileErr)
-          throw new Error("Failed to create user profile")
-        }
-
+      if (result.success && result.user) {
         const user: User = {
-          id: data.user.id,
-          email: data.user.email || "",
-          name,
+          id: result.user.id,
+          email: result.user.email || "",
+          name: result.user.name,
         }
         storage.setUser(user)
         storage.migrateGuestToUser()
