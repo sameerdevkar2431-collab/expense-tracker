@@ -1,20 +1,20 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 export async function signupServerAction(email: string, password: string, name: string) {
   try {
-    const supabase = await createClient()
     console.log("[v0] Server signup for:", email)
 
-    // Create auth user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // Use admin client to create user (bypasses email confirmation requirement)
+    const adminClient = createAdminClient()
+
+    // Create auth user with admin client - no confirmation email sent
+    const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
       email,
       password,
-      options: {
-        data: { name },
-      },
+      email_confirm: true, // Automatically confirm email, skip sending confirmation
+      user_metadata: { name },
     })
 
     if (authError) {
@@ -29,7 +29,6 @@ export async function signupServerAction(email: string, password: string, name: 
     console.log("[v0] Auth user created:", authData.user.id)
 
     // Create user profile using admin client (bypasses RLS)
-    const adminClient = createAdminClient()
     const { error: profileError } = await adminClient.from("users").insert({
       id: authData.user.id,
       email: authData.user.email || email,
@@ -44,20 +43,6 @@ export async function signupServerAction(email: string, password: string, name: 
     }
 
     console.log("[v0] User profile created successfully")
-
-    // Sign in the user immediately after signup using signInWithPassword
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (signInError) {
-      console.error("[v0] Auto sign-in after signup failed:", signInError)
-      // Don't throw - signup was successful, just sign-in failed
-      // User can still manually log in
-    } else if (signInData.user) {
-      console.log("[v0] User auto-signed in after signup")
-    }
 
     return {
       success: true,
