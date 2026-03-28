@@ -1,23 +1,55 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@supabase/supabase-js"
 import { NextRequest, NextResponse } from "next/server"
+
+// Create Supabase client for API routes using admin key
+function createAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
+
+// Extract user ID from Authorization header token
+async function getUserFromToken(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get("authorization")
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.log("[v0] No authorization header")
+      return null
+    }
+
+    const token = authHeader.substring(7)
+    const supabase = createAdminClient()
+
+    // Verify token and get user
+    const { data: { user }, error } = await supabase.auth.getUser(token)
+    
+    if (error) {
+      console.log("[v0] Token verification error:", error.message)
+      return null
+    }
+
+    console.log("[v0] User from token:", user?.id)
+    return user
+  } catch (err) {
+    console.error("[v0] Error getting user from token:", err)
+    return null
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
     console.log("[v0] GET /api/transactions - Starting")
-    const supabase = await createClient()
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
+    const user = await getUserFromToken(request)
+    console.log("[v0] Auth check:", { hasUser: !!user })
 
-    console.log("[v0] Auth check:", { hasUser: !!user, authError: authError?.message })
-
-    if (authError || !user) {
-      console.log("[v0] Unauthorized - no user session")
+    if (!user) {
+      console.log("[v0] Unauthorized - no user from token")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const supabase = createAdminClient()
 
     // Fetch user's transactions
     const { data, error } = await supabase
@@ -46,20 +78,16 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     console.log("[v0] POST /api/transactions - Starting")
-    const supabase = await createClient()
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
+    const user = await getUserFromToken(request)
+    console.log("[v0] Auth check:", { hasUser: !!user })
 
-    console.log("[v0] Auth check:", { hasUser: !!user, userId: user?.id, authError: authError?.message })
-
-    if (authError || !user) {
-      console.log("[v0] Unauthorized - no user session")
+    if (!user) {
+      console.log("[v0] Unauthorized - no user from token")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const supabase = createAdminClient()
 
     const body = await request.json()
     console.log("[v0] Request body:", body)
@@ -146,18 +174,15 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     console.log("[v0] PUT /api/transactions - Starting")
-    const supabase = await createClient()
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      console.log("[v0] Unauthorized - no user session")
+    const user = await getUserFromToken(request)
+    
+    if (!user) {
+      console.log("[v0] Unauthorized - no user from token")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const supabase = createAdminClient()
 
     const body = await request.json()
     const { id, amount, category_id, description, date, type } = body
@@ -205,18 +230,14 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const user = await getUserFromToken(request)
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      console.log("[v0] Unauthorized - no user session")
+    if (!user) {
+      console.log("[v0] Unauthorized - no user from token")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const supabase = createAdminClient()
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get("id")

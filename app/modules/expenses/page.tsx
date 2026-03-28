@@ -6,6 +6,7 @@ import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { storage } from "@/lib/storage"
 import { useAuth } from "@/lib/auth-context"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Trash2, Edit2, Plus } from "lucide-react"
@@ -44,9 +45,20 @@ export default function ExpensesModule() {
         setError("")
         if (isLoggedIn) {
           console.log("[v0] Loading expenses from Supabase")
+          const supabase = createClient()
+          const { data: { session } } = await supabase.auth.getSession()
+          
+          if (!session?.access_token) {
+            console.log("[v0] No access token available")
+            setExpenses(storage.getTransactions(false).filter((t) => t.type === "expense"))
+            return
+          }
+
           const response = await fetch("/api/transactions", {
             method: "GET",
-            credentials: "include",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
           })
 
           if (!response.ok) {
@@ -105,11 +117,20 @@ export default function ExpensesModule() {
 
       if (isLoggedIn) {
         console.log("[v0] Saving expense to Supabase")
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session?.access_token) {
+          setError("Not authenticated. Please log in again.")
+          setLoading(false)
+          return
+        }
+
         const response = await fetch("/api/transactions", {
           method: "POST",
-          credentials: "include",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify(expenseData),
         })
@@ -155,9 +176,20 @@ export default function ExpensesModule() {
     try {
       if (isLoggedIn) {
         console.log("[v0] Deleting expense from Supabase:", id)
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session?.access_token) {
+          setError("Not authenticated. Please log in again.")
+          setLoading(false)
+          return
+        }
+
         const response = await fetch(`/api/transactions?id=${id}`, {
           method: "DELETE",
-          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
         })
 
         if (!response.ok) {

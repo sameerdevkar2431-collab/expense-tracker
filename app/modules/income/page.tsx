@@ -6,6 +6,7 @@ import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { storage } from "@/lib/storage"
 import { useAuth } from "@/lib/auth-context"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Trash2, Edit2, Plus } from "lucide-react"
@@ -32,9 +33,20 @@ export default function IncomeModule() {
         setError("")
         if (isLoggedIn) {
           console.log("[v0] Loading income from Supabase")
+          const supabase = createClient()
+          const { data: { session } } = await supabase.auth.getSession()
+          
+          if (!session?.access_token) {
+            console.log("[v0] No access token available")
+            setIncomes(storage.getTransactions(false).filter((t) => t.type === "income"))
+            return
+          }
+
           const response = await fetch("/api/transactions", {
             method: "GET",
-            credentials: "include",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
           })
 
           if (!response.ok) {
@@ -88,12 +100,23 @@ export default function IncomeModule() {
       }
 
       if (isLoggedIn) {
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session?.access_token) {
+          setError("Not authenticated. Please log in again.")
+          setLoading(false)
+          return
+        }
+
         if (editingId) {
           console.log("[v0] Updating income in Supabase")
           const response = await fetch("/api/transactions", {
             method: "PUT",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
             body: JSON.stringify({ id: editingId, ...incomeData }),
           })
 
@@ -111,8 +134,10 @@ export default function IncomeModule() {
           console.log("[v0] Creating income in Supabase")
           const response = await fetch("/api/transactions", {
             method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
             body: JSON.stringify(incomeData),
           })
 
@@ -155,9 +180,20 @@ export default function IncomeModule() {
     try {
       if (isLoggedIn) {
         console.log("[v0] Deleting income from Supabase:", id)
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session?.access_token) {
+          setError("Not authenticated. Please log in again.")
+          setLoading(false)
+          return
+        }
+
         const response = await fetch(`/api/transactions?id=${id}`, {
           method: "DELETE",
-          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
         })
 
         if (!response.ok) {
