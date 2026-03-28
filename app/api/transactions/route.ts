@@ -1,27 +1,19 @@
 import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
 import { NextRequest, NextResponse } from "next/server"
 
-// Helper to create Supabase client in API routes
-function createClient() {
-  const cookieStore = cookies()
-
+// Helper to create Supabase client in API routes with request cookies
+function createClient(request: NextRequest) {
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll()
+          return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // Ignore - called from Server Component
-          }
+          // Cookies can't be set in API route responses, only in middleware
+          // But we need to read them from the request
         },
       },
     }
@@ -31,7 +23,7 @@ function createClient() {
 export async function GET(request: NextRequest) {
   try {
     console.log("[v0] GET /api/transactions - Starting")
-    const supabase = createClient()
+    const supabase = createClient(request)
 
     // Get authenticated user
     const {
@@ -73,7 +65,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     console.log("[v0] POST /api/transactions - Starting")
-    const supabase = createClient()
+    const supabase = createClient(request)
 
     // Get authenticated user
     const {
@@ -173,7 +165,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     console.log("[v0] PUT /api/transactions - Starting")
-    const supabase = createClient()
+    const supabase = createClient(request)
 
     // Get authenticated user
     const {
@@ -232,7 +224,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = createClient(request)
 
     // Get authenticated user
     const {
