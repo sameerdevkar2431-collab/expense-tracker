@@ -87,9 +87,17 @@ export default function ExpensesModule() {
     setError("")
 
     try {
+      // Get category ID from selected category name
+      const selectedCategory = categories.find((c) => c.name === formData.category)
+      if (!selectedCategory) {
+        setError("Please select a valid category")
+        setLoading(false)
+        return
+      }
+
       const expenseData = {
         amount: Number.parseFloat(formData.amount),
-        category: formData.category,
+        category_id: selectedCategory.id, // Send category ID, not name
         description: formData.description,
         date: formData.date,
         type: "expense",
@@ -146,16 +154,26 @@ export default function ExpensesModule() {
 
     try {
       if (isLoggedIn) {
-        // TODO: Create DELETE /api/transactions/[id] endpoint
-        console.log("[v0] Would delete from Supabase:", id)
-        // For now, delete from localStorage
-        storage.deleteTransaction(id, false)
+        console.log("[v0] Deleting expense from Supabase:", id)
+        const response = await fetch(`/api/transactions?id=${id}`, {
+          method: "DELETE",
+          credentials: "include",
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          console.error("[v0] Delete API error:", errorData)
+          setError("Failed to delete expense from server")
+          return
+        }
+
+        console.log("[v0] Successfully deleted from Supabase")
+        setExpenses(expenses.filter((e) => e.id !== id))
       } else {
         storage.deleteTransaction(id, false)
+        const updatedExpenses = storage.getTransactions(false).filter((t) => t.type === "expense")
+        setExpenses(updatedExpenses)
       }
-
-      const updatedExpenses = storage.getTransactions(false).filter((t) => t.type === "expense")
-      setExpenses(updatedExpenses)
     } catch (err) {
       console.error("[v0] Error deleting expense:", err)
       setError("Failed to delete expense")

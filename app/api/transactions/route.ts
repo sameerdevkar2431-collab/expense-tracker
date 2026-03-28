@@ -64,24 +64,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log("[v0] Request body:", body)
 
-    const { amount, category, description, date, type } = body
+    const { amount, category_id, description, date, type } = body
 
     // Validate required fields
-    if (!amount || !category || !date || !type) {
+    if (!amount || !category_id || !date || !type) {
       console.log("[v0] Validation failed - missing fields:", {
         amount: !!amount,
-        category: !!category,
+        category_id: !!category_id,
         date: !!date,
         type: !!type,
       })
       return NextResponse.json(
-        { error: "Missing required fields: amount, category, date, type" },
+        { error: "Missing required fields: amount, category_id, date, type" },
         { status: 400 }
       )
     }
 
-    // Validate amount is a number
-    if (typeof amount !== "number" || amount <= 0) {
+    // Validate and convert amount to number
+    const parsedAmount = parseFloat(amount.toString())
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
       return NextResponse.json({ error: "Amount must be a positive number" }, { status: 400 })
     }
 
@@ -90,23 +91,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Type must be 'expense' or 'income'" }, { status: 400 })
     }
 
+    // Validate date format (YYYY-MM-DD)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return NextResponse.json({ error: "Date must be in YYYY-MM-DD format" }, { status: 400 })
+    }
+
     console.log("[v0] Inserting transaction for user:", user.id, {
-      amount,
-      category,
+      amount: parsedAmount,
+      category_id,
       type,
       date,
     })
 
-    // Insert transaction with user_id set by RLS
+    // Insert transaction with proper data types
     const { data, error } = await supabase
       .from("transactions")
       .insert({
         user_id: user.id,
-        amount: parseFloat(amount.toString()),
-        category: category.toString(),
-        description: description ? description.toString() : null,
+        amount: parsedAmount,
+        category_id: category_id.toString(),
+        description: description && description.toString().trim() ? description.toString().trim() : null,
         date: date.toString(),
         type: type.toString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .select()
 
@@ -132,5 +140,109 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[v0] [Transactions] Server error - FULL DETAILS:", error)
     return NextResponse.json({ error: "Internal server error", details: String(error) }, { status: 500 })
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    console.log("[v0] PUT /api/transactions - Starting")
+    const supabase = createClient()
+
+    // Get authenticated user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      console.log("[v0] Unauthorized - no user session")
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { id, amount, category_id, description, date, type } = body
+
+    // Validate required fields
+    if (!id || !amount || !category_id || !date || !type) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+
+    // Validate amount
+    const parsedAmount = parseFloat(amount.toString())
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      return NextResponse.json({ error: "Amount must be a positive number" }, { status: 400 })
+    }
+
+    console.log("[v0] Updating transaction:", id, "for user:", user.id)
+
+    // Update transaction (RLS ensures user can only update their own)
+    const { data, error } = await supabase
+      .from("transactions")
+      .update({
+        amount: parsedAmount,
+        category_id: category_id.toString(),
+        description: description && description.toString().trim() ? description.toString().trim() : null,
+        date: date.toString(),
+        type: type.toString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .select()
+
+    if (error) {
+      console.error("[v0] Update error:", error)
+      return NextResponse.json({ error: "Failed to update transaction" }, { status: 500 })
+    }
+
+    console.log("[v0] Successfully updated transaction:", id)
+    return NextResponse.json({ transaction: data?.[0] }, { status: 200 })
+  } catch (error) {
+    console.error("[v0] [Transactions] Server error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = createClient()
+
+    // Get authenticated user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      console.log("[v0] Unauthorized - no user session")
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get("id")
+
+    if (!id) {
+      return NextResponse.json({ error: "Transaction ID required" }, { status: 400 })
+    }
+
+    console.log("[v0] Deleting transaction:", id, "for user:", user.id)
+
+    // Delete transaction (RLS ensures user can only delete their own)
+    const { error } = await supabase
+      .from("transactions")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", user.id)
+
+    if (error) {
+      console.error("[v0] Delete error:", error)
+      return NextResponse.json({ error: "Failed to delete transaction" }, { status: 500 })
+    }
+
+    console.log("[v0] Successfully deleted transaction:", id)
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("[v0] [Transactions] Server error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
