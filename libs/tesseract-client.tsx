@@ -38,7 +38,7 @@ export async function analyzeImage(file: File): Promise<OCRResult> {
 }
 
 // Client-side OCR using Tesseract.js
-// Note: Requires <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5"></script> in HTML
+// Note: Requires Tesseract.js to be loaded via CDN or bundled
 async function analyzeTesseract(file: File): Promise<OCRResult> {
   return new Promise((resolve, reject) => {
     // Check if Tesseract is loaded in window
