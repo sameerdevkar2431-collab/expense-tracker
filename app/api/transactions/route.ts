@@ -1,29 +1,10 @@
-import { createServerClient } from "@supabase/ssr"
+import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
-
-// Helper to create Supabase client in API routes with request cookies
-function createClient(request: NextRequest) {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          // Cookies can't be set in API route responses, only in middleware
-          // But we need to read them from the request
-        },
-      },
-    }
-  )
-}
 
 export async function GET(request: NextRequest) {
   try {
     console.log("[v0] GET /api/transactions - Starting")
-    const supabase = createClient(request)
+    const supabase = await createClient()
 
     // Get authenticated user
     const {
@@ -65,7 +46,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     console.log("[v0] POST /api/transactions - Starting")
-    const supabase = createClient(request)
+    const supabase = await createClient()
 
     // Get authenticated user
     const {
@@ -165,7 +146,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     console.log("[v0] PUT /api/transactions - Starting")
-    const supabase = createClient(request)
+    const supabase = await createClient()
 
     // Get authenticated user
     const {
@@ -224,7 +205,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createClient(request)
+    const supabase = await createClient()
 
     // Get authenticated user
     const {
