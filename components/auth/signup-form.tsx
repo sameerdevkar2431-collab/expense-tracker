@@ -35,7 +35,8 @@ export function SignupForm() {
       await signup(email, password, name)
       router.push("/dashboard")
     } catch (err) {
-      setError("Signup failed. Please try again.")
+      const errorMsg = err instanceof Error ? err.message : "Signup failed. Please try again."
+      setError(errorMsg)
     } finally {
       setIsLoading(false)
     }

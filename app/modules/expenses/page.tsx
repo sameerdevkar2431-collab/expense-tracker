@@ -6,6 +6,7 @@ import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { storage } from "@/lib/storage"
 import { useAuth } from "@/lib/auth-context"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Trash2, Edit2, Plus } from "lucide-react"
@@ -44,9 +45,20 @@ export default function ExpensesModule() {
         setError("")
         if (isLoggedIn) {
           console.log("[v0] Loading expenses from Supabase")
+          const supabase = createClient()
+          const { data: { session } } = await supabase.auth.getSession()
+          
+          if (!session?.access_token) {
+            console.log("[v0] No access token available")
+            setExpenses(storage.getTransactions(false).filter((t) => t.type === "expense"))
+            return
+          }
+
           const response = await fetch("/api/transactions", {
             method: "GET",
-            credentials: "include",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
           })
 
           if (!response.ok) {
@@ -87,9 +99,17 @@ export default function ExpensesModule() {
     setError("")
 
     try {
+      // Get category ID from selected category name
+      const selectedCategory = categories.find((c) => c.name === formData.category)
+      if (!selectedCategory) {
+        setError("Please select a valid category")
+        setLoading(false)
+        return
+      }
+
       const expenseData = {
         amount: Number.parseFloat(formData.amount),
-        category: formData.category,
+        category_id: selectedCategory.id, // Send category ID, not name
         description: formData.description,
         date: formData.date,
         type: "expense",
@@ -97,11 +117,20 @@ export default function ExpensesModule() {
 
       if (isLoggedIn) {
         console.log("[v0] Saving expense to Supabase")
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session?.access_token) {
+          setError("Not authenticated. Please log in again.")
+          setLoading(false)
+          return
+        }
+
         const response = await fetch("/api/transactions", {
           method: "POST",
-          credentials: "include",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify(expenseData),
         })
@@ -146,16 +175,37 @@ export default function ExpensesModule() {
 
     try {
       if (isLoggedIn) {
-        // TODO: Create DELETE /api/transactions/[id] endpoint
-        console.log("[v0] Would delete from Supabase:", id)
-        // For now, delete from localStorage
-        storage.deleteTransaction(id, false)
+        console.log("[v0] Deleting expense from Supabase:", id)
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session?.access_token) {
+          setError("Not authenticated. Please log in again.")
+          setLoading(false)
+          return
+        }
+
+        const response = await fetch(`/api/transactions?id=${id}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          console.error("[v0] Delete API error:", errorData)
+          setError("Failed to delete expense from server")
+          return
+        }
+
+        console.log("[v0] Successfully deleted from Supabase")
+        setExpenses(expenses.filter((e) => e.id !== id))
       } else {
         storage.deleteTransaction(id, false)
+        const updatedExpenses = storage.getTransactions(false).filter((t) => t.type === "expense")
+        setExpenses(updatedExpenses)
       }
-
-      const updatedExpenses = storage.getTransactions(false).filter((t) => t.type === "expense")
-      setExpenses(updatedExpenses)
     } catch (err) {
       console.error("[v0] Error deleting expense:", err)
       setError("Failed to delete expense")

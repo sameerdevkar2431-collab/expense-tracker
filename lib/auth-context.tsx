@@ -57,7 +57,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false)
       }
     }
+    
     initAuth()
+
+    // Listen for auth state changes (login, logout, etc.)
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("[v0] Auth state changed:", event, "session:", !!session)
+      
+      if (session?.user) {
+        const updatedUser: User = {
+          id: session.user.id,
+          email: session.user.email || "",
+          name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "",
+        }
+        setUser(updatedUser)
+        storage.setUser(updatedUser)
+        console.log("[v0] User authenticated:", updatedUser.email)
+      } else {
+        setUser(null)
+        storage.logout()
+        console.log("[v0] User logged out")
+      }
+    })
+
+    return () => {
+      authListener?.subscription.unsubscribe()
+    }
   }, [supabase])
 
   const login = async (email: string, password: string) => {
@@ -91,40 +116,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("[v0] Signing up with email:", email, "name:", name)
       
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { name },
-        },
-      })
+      // Use server action to create user (bypasses RLS with service role)
+      const { signupServerAction } = await import("@/app/actions/auth")
+      const result = await signupServerAction(email, password, name)
 
-      if (error) {
-        console.error("[v0] Signup error:", error)
-        throw new Error(error.message)
-      }
-
-      if (data.user) {
-        console.log("[v0] User created in Supabase:", data.user.id)
-        
-        // Create user profile in users table
-        const { error: profileError } = await supabase.from("users").insert({
-          id: data.user.id,
-          email: data.user.email,
-          name: name,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-
-        if (profileError) {
-          console.error("[v0] Profile creation error:", profileError)
-          throw new Error("Failed to create user profile")
-        }
-
+      if (result.success && result.user) {
         const user: User = {
-          id: data.user.id,
-          email: data.user.email || "",
-          name,
+          id: result.user.id,
+          email: result.user.email || "",
+          name: result.user.name,
         }
         storage.setUser(user)
         storage.migrateGuestToUser()

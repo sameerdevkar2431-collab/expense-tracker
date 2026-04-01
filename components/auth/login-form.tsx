@@ -27,7 +27,8 @@ export function LoginForm() {
       await login(email, password)
       router.push("/dashboard")
     } catch (err) {
-      setError("Login failed. Please try again.")
+      const errorMsg = err instanceof Error ? err.message : "Login failed. Please check your email and password."
+      setError(errorMsg)
     } finally {
       setIsLoading(false)
     }
@@ -73,7 +74,7 @@ export function LoginForm() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <label className="text-sm font-medium">Password</label>
-                  <Link href="#" className="text-xs text-primary hover:underline">
+                  <Link href="/auth/forgot-password" className="text-xs text-primary hover:underline">
                     Forgot?
                   </Link>
                 </div>
